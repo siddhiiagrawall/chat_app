@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
+import User from "../models/user.model.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -18,17 +19,44 @@ export function getReceiverSocketId(userId) {
 // used to store online users
 const userSocketMap = {}; // {userId: socketId}
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
   console.log("A user connected", socket.id);
 
   const userId = socket.handshake.query.userId;
-  if (userId) userSocketMap[userId] = socket.id;
+  if (userId && userId !== 'undefined') {
+    userSocketMap[userId] = socket.id;
+
+    // Update lastSeen to now (user is online)
+    try {
+      await User.findByIdAndUpdate(userId, { lastSeen: new Date() });
+    } catch (err) {
+      console.error('Error updating lastSeen on connect:', err);
+    }
+  }
 
   // io.emit() is used to send events to all the connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-  socket.on("disconnect", () => {
+  // Handle typing indicator
+  socket.on("typing", ({ receiverId, isTyping }) => {
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("userTyping", { userId, isTyping });
+    }
+  });
+
+  socket.on("disconnect", async () => {
     console.log("A user disconnected", socket.id);
+
+    // Update lastSeen when user disconnects
+    if (userId && userId !== 'undefined') {
+      try {
+        await User.findByIdAndUpdate(userId, { lastSeen: new Date() });
+      } catch (err) {
+        console.error('Error updating lastSeen on disconnect:', err);
+      }
+    }
+
     delete userSocketMap[userId];
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });

@@ -20,6 +20,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    gender: {
+      type: String,
+      enum: ["male", "female"],
+      required: true,
+    },
+    lastSeen: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );

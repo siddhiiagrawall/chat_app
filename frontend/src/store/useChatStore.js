@@ -1,7 +1,7 @@
 import { create } from "zustand";
+import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
-import { axiosInstance } from "../lib/axios";
-import { useAuthStore } from "./useAuthStore";
+import { useAuthStore } from "./useAuthStore.js";
 
 export const useChatStore = create((set, get) => ({
   messages: [],
@@ -9,11 +9,12 @@ export const useChatStore = create((set, get) => ({
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
+  isTyping: false,
 
   getUsers: async () => {
     set({ isUsersLoading: true });
     try {
-        const res = await axiosInstance.get("/messages/users");
+      const res = await axiosInstance.get("/messages/users");
       set({ users: res.data });
     } catch (error) {
       console.error("getUsers error:", error);
@@ -38,6 +39,7 @@ export const useChatStore = create((set, get) => ({
       set({ isMessagesLoading: false });
     }
   },
+
   sendMessage: async (messageData) => {
     const { selectedUser, messages } = get();
     try {
@@ -45,6 +47,17 @@ export const useChatStore = create((set, get) => ({
       set({ messages: [...messages, res.data] });
     } catch (error) {
       toast.error(error.response.data.message);
+    }
+  },
+
+  deleteMessage: async (messageId) => {
+    const { messages } = get();
+    try {
+      await axiosInstance.delete(`/messages/${messageId}`);
+      set({ messages: messages.filter((msg) => msg._id !== messageId) });
+      toast.success("Message deleted");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete message");
     }
   },
 
@@ -62,11 +75,25 @@ export const useChatStore = create((set, get) => ({
         messages: [...get().messages, newMessage],
       });
     });
+
+    socket.on("userTyping", ({ userId, isTyping }) => {
+      if (userId === selectedUser._id) {
+        set({ isTyping });
+      }
+    });
+
+    socket.on("messageDeleted", ({ messageId }) => {
+      set({
+        messages: get().messages.filter((msg) => msg._id !== messageId),
+      });
+    });
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
     socket.off("newMessage");
+    socket.off("userTyping");
+    socket.off("messageDeleted");
   },
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),

@@ -4,37 +4,51 @@ import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
-    const { fullName, email, password } = req.body;
+  const { fullName, email, password, gender } = req.body;
 
-    try {
-        if(!fullName || !email || !password){
-            return res.status(400).send('All fields are required');
-        }
-        if(password.length < 6){
-            return res.status(400).send('Password must be at least 6 characters long');
-        }
-        const existingUser = await User.findOne({ email });
-        if(existingUser){
-            return  res.status(400).send('User with this email already exists');
-        }
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        const newUser = new User({ email, fullName, password: hashedPassword });
-        if(newUser) {
-            generateToken(newUser._id, res);
-            await newUser.save();
-            return res.status(201).json({
-                _id: newUser._id,
-                email: newUser.email,
-                fullName: newUser.fullName,
-                profilePic: newUser.profilePic,
-            });
-        }
-        else return res.status(500).send('Error registering user');
-    } catch (error) {
-        console.error('Error registering user:', error.message);
-        res.status(500).send('Internal server error');
+  try {
+    if (!fullName || !email || !password || !gender) {
+      return res.status(400).json({ message: 'All fields are required' });
     }
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Generate avatar based on gender
+    const maleProfilePic = `https://avatar.iran.liara.run/public/boy?username=${email}`;
+    const femaleProfilePic = `https://avatar.iran.liara.run/public/girl?username=${email}`;
+
+    const newUser = new User({
+      email,
+      fullName,
+      password: hashedPassword,
+      gender,
+      profilePic: gender === "male" ? maleProfilePic : femaleProfilePic
+    });
+
+    if (newUser) {
+      generateToken(newUser._id, res);
+      await newUser.save();
+      return res.status(201).json({
+        _id: newUser._id,
+        email: newUser.email,
+        fullName: newUser.fullName,
+        profilePic: newUser.profilePic,
+        gender: newUser.gender,
+      });
+    }
+    else return res.status(500).json({ message: 'Error registering user' });
+  } catch (error) {
+    console.error('Error registering user:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 };
 
 export const login = async (req, res) => {
@@ -58,6 +72,7 @@ export const login = async (req, res) => {
       fullName: user.fullName,
       email: user.email,
       profilePic: user.profilePic,
+      gender: user.gender,
     });
   } catch (error) {
     console.log("Error in login controller", error.message);
@@ -103,6 +118,21 @@ export const checkAuth = (req, res) => {
     res.status(200).json(req.user);
   } catch (error) {
     console.log("Error in checkAuth controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+// Get other users (for chat list)
+export const getOtherUsers = async (req, res) => {
+  try {
+    const loggedInUserId = req.user._id;
+    const otherUsers = await User.find({ _id: { $ne: loggedInUserId } })
+      .select("-password")
+      .sort({ lastSeen: -1 });
+
+    res.status(200).json(otherUsers);
+  } catch (error) {
+    console.log("Error in getOtherUsers controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };

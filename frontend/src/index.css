@@ -30,3 +30,35 @@ code {
   background: #1b1b1b;
   border-radius: 10px;
 }
+
+/* Auth page gradient background */
+.auth-gradient {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+/* Chat scrollbar */
+.chat-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Message bubble hover effect */
+.message-bubble {
+  transition: all 150ms ease-in-out;
+}
+
+.message-bubble:hover {
+  transform: translateY(-1px);
+}
