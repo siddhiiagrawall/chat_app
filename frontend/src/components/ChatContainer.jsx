@@ -6,7 +6,7 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
-import { Trash2 } from "lucide-react";
+import { Trash2, Check, CheckCheck } from "lucide-react";
 
 const ChatContainer = () => {
   const {
@@ -18,6 +18,7 @@ const ChatContainer = () => {
     unsubscribeFromMessages,
     deleteMessage,
     isTyping,
+    markMessagesAsRead,
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
@@ -25,17 +26,22 @@ const ChatContainer = () => {
 
   useEffect(() => {
     getMessages(selectedUser._id);
+    markMessagesAsRead(selectedUser._id);
 
     subscribeToMessages();
 
     return () => unsubscribeFromMessages();
-  }, [selectedUser._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);
+  }, [selectedUser._id, getMessages, subscribeToMessages, unsubscribeFromMessages, markMessagesAsRead]);
 
   useEffect(() => {
     if (messageEndRef.current && messages) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+    // Mark new messages as read if we are viewing this chat
+    if (messages.length > 0) {
+      markMessagesAsRead(selectedUser._id);
+    }
+  }, [messages, markMessagesAsRead, selectedUser._id]);
 
   const handleDeleteMessage = async (messageId) => {
     if (window.confirm("Are you sure you want to delete this message?")) {
@@ -87,8 +93,8 @@ const ChatContainer = () => {
                 <div className="flex flex-col">
                   <div
                     className={`rounded-2xl px-4 py-2.5 message-bubble relative group ${isOwnMessage
-                        ? "bg-green-500 text-white"
-                        : "bg-slate-600 text-slate-50"
+                      ? "bg-green-500 text-white"
+                      : "bg-slate-600 text-slate-50"
                       }`}
                   >
                     {message.image && (
@@ -100,8 +106,17 @@ const ChatContainer = () => {
                     )}
                     {message.text && <p className="text-sm">{message.text}</p>}
 
-                    <div className={`text-xs mt-1 ${isOwnMessage ? "text-green-100" : "text-slate-400"}`}>
+                    <div className={`text-xs mt-1 flex items-center gap-1 ${isOwnMessage ? "text-green-100" : "text-slate-400"}`}>
                       {formatMessageTime(message.createdAt)}
+                      {isOwnMessage && (
+                        <span>
+                          {message.read ? (
+                            <CheckCheck size={14} className="text-blue-200" />
+                          ) : (
+                            <Check size={14} className="text-green-200" />
+                          )}
+                        </span>
+                      )}
                     </div>
 
                     {/* Delete button - only show for own messages */}

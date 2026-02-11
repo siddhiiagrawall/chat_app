@@ -86,6 +86,18 @@ export const useChatStore = create((set, get) => ({
       set({
         messages: get().messages.filter((msg) => msg._id !== messageId),
       });
+      set({
+        messages: get().messages.filter((msg) => msg._id !== messageId),
+      });
+    });
+
+    socket.on("messagesRead", ({ readerId }) => {
+      const { selectedUser, messages } = get();
+      if (selectedUser && selectedUser._id === readerId) {
+        set({
+          messages: messages.map((msg) => ({ ...msg, read: true })),
+        });
+      }
     });
   },
 
@@ -94,6 +106,16 @@ export const useChatStore = create((set, get) => ({
     socket.off("newMessage");
     socket.off("userTyping");
     socket.off("messageDeleted");
+    socket.off("messagesRead");
+  },
+
+  markMessagesAsRead: async (senderId) => {
+    try {
+      await axiosInstance.post(`/messages/read/${senderId}`);
+      // Optimistically update logic if needed, but socket usually handles it
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
   },
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),

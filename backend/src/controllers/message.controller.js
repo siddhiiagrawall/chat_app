@@ -7,7 +7,10 @@ import { getReceiverSocketId, io } from "../lib/socket.js";
 export const getUsersForSidebar = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
+    console.log("getUsersForSidebar called by user:", loggedInUserId);
+
     const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password");
+    console.log("Filtered users found:", filteredUsers.length);
 
     res.status(200).json(filteredUsers);
   } catch (error) {
@@ -96,6 +99,29 @@ export const deleteMessage = async (req, res) => {
     res.status(200).json({ message: "Message deleted successfully" });
   } catch (error) {
     console.log("Error in deleteMessage controller: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const markMessagesAsRead = async (req, res) => {
+  try {
+    const { id: senderId } = req.params;
+    const receiverId = req.user._id;
+
+    await Message.updateMany(
+      { senderId: senderId, receiverId: receiverId, read: false },
+      { $set: { read: true } }
+    );
+
+    // Notify the sender that messages were read
+    const senderSocketId = getReceiverSocketId(senderId);
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("messagesRead", { readerId: receiverId });
+    }
+
+    res.status(200).json({ message: "Messages marked as read" });
+  } catch (error) {
+    console.log("Error in markMessagesAsRead controller: ", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };
