@@ -3,7 +3,7 @@ import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:8080" : "/";
+const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5001" : "/";
 
 export const useAuthStore = create((set, get) => ({
   authUser: null,
@@ -79,6 +79,50 @@ export const useAuthStore = create((set, get) => ({
       toast.error(error.response.data.message);
     } finally {
       set({ isUpdatingProfile: false });
+    }
+  },
+
+  updateAbout: async (data) => {
+    set({ isUpdatingProfile: true });
+    try {
+      const res = await axiosInstance.put("/auth/update-about", data);
+      set({ authUser: res.data });
+      toast.success("About info updated successfully");
+    } catch (error) {
+      console.log("error in update about:", error);
+      toast.error(error.response.data.message);
+    } finally {
+      set({ isUpdatingProfile: false });
+    }
+  },
+
+  blockUser: async (userId) => {
+    try {
+      await axiosInstance.put(`/auth/block/${userId}`);
+      set((state) => ({
+        authUser: {
+          ...state.authUser,
+          blockedUsers: [...state.authUser.blockedUsers, userId],
+        },
+      }));
+      toast.success("User blocked successfully");
+    } catch (error) {
+      toast.error(error.response.data.message);
+    }
+  },
+
+  unblockUser: async (userId) => {
+    try {
+      await axiosInstance.put(`/auth/unblock/${userId}`);
+      set((state) => ({
+        authUser: {
+          ...state.authUser,
+          blockedUsers: state.authUser.blockedUsers.filter((id) => id !== userId),
+        },
+      }));
+      toast.success("User unblocked successfully");
+    } catch (error) {
+      toast.error(error.response.data.message);
     }
   },
 

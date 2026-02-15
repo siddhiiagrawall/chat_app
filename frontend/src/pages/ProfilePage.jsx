@@ -4,8 +4,15 @@ import { Camera, Mail, User } from "lucide-react";
 import IconBar from "../components/IconBar";
 
 const ProfilePage = () => {
-  const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
+  const { authUser, isUpdatingProfile, updateProfile, updateAbout } = useAuthStore();
   const [selectedImg, setSelectedImg] = useState(null);
+  const [about, setAbout] = useState(authUser.about || "");
+  const [isEditingAbout, setIsEditingAbout] = useState(false);
+
+  const handleUpdateAbout = async () => {
+    await updateAbout({ about });
+    setIsEditingAbout(false);
+  };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -68,41 +75,83 @@ const ProfilePage = () => {
               </p>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-1.5">
-                <div className="text-sm text-slate-400 flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  Full Name
-                </div>
-                <p className="px-4 py-2.5 bg-slate-800 rounded-lg border border-slate-700 text-slate-50">{authUser?.fullName}</p>
+            <div className="space-y-1.5">
+              <div className="text-sm text-slate-400 flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Full Name
               </div>
+              <p className="px-4 py-2.5 bg-slate-800 rounded-lg border border-slate-700 text-slate-50">{authUser?.fullName}</p>
+            </div>
 
-              <div className="space-y-1.5">
-                <div className="text-sm text-slate-400 flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  Email Address
-                </div>
-                <p className="px-4 py-2.5 bg-slate-800 rounded-lg border border-slate-700 text-slate-50">{authUser?.email}</p>
+            <div className="space-y-1.5">
+              <div className="text-sm text-slate-400 flex items-center gap-2">
+                <User className="w-4 h-4" />
+                About
+              </div>
+              <div className="relative">
+                <textarea
+                  value={about}
+                  onChange={(e) => setAbout(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-800 rounded-lg border border-slate-700 text-slate-50 focus:border-green-500 focus:outline-none resize-none"
+                  rows="3"
+                  disabled={!isEditingAbout}
+                />
+                {!isEditingAbout ? (
+                  <button
+                    onClick={() => setIsEditingAbout(true)}
+                    className="absolute top-2 right-2 p-1 text-slate-400 hover:text-green-500 transition-colors"
+                  >
+                    Edit
+                  </button>
+                ) : (
+                  <div className="absolute bottom-2 right-2 flex gap-2">
+                    <button
+                      onClick={() => {
+                        setAbout(authUser.about || "");
+                        setIsEditingAbout(false);
+                      }}
+                      className="px-3 py-1 text-xs bg-slate-700 text-slate-300 rounded hover:bg-slate-600 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleUpdateAbout}
+                      disabled={isUpdatingProfile}
+                      className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors disabled:opacity-50"
+                    >
+                      {isUpdatingProfile ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="mt-6 bg-slate-800 rounded-xl p-6 border border-slate-700">
-              <h2 className="text-lg font-medium text-slate-50 mb-4">Account Information</h2>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between py-2 border-b border-slate-700">
-                  <span className="text-slate-400">Member Since</span>
-                  <span className="text-slate-50">{authUser.createdAt?.split("T")[0]}</span>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-slate-400">Account Status</span>
-                  <span className="text-green-500">Active</span>
-                </div>
+            <div className="space-y-1.5">
+              <div className="text-sm text-slate-400 flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                Email Address
+              </div>
+              <p className="px-4 py-2.5 bg-slate-800 rounded-lg border border-slate-700 text-slate-50">{authUser?.email}</p>
+            </div>
+          </div>
+
+          <div className="mt-6 bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h2 className="text-lg font-medium text-slate-50 mb-4">Account Information</h2>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between py-2 border-b border-slate-700">
+                <span className="text-slate-400">Member Since</span>
+                <span className="text-slate-50">{authUser.createdAt?.split("T")[0]}</span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-slate-400">Account Status</span>
+                <span className="text-green-500">Active</span>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
   );
 };
 export default ProfilePage;

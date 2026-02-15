@@ -1,26 +1,32 @@
 import { MessageSquare, Users, Settings, LogOut } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
+import { useChatStore } from "../store/useChatStore";
 import { Link, useLocation } from "react-router-dom";
 
 const IconBar = () => {
     const { logout, authUser } = useAuthStore();
+    const { activeSidebarItem, setActiveSidebarItem } = useChatStore();
     const location = useLocation();
 
-    const isActive = (path) => location.pathname === path;
+    // Reset activeSidebarItem if we navigate away and come back, or handle it via useEffect if needed
+    // For now, simpler is better.
 
     return (
         <aside className="w-[60px] bg-[#0a0f1a] flex flex-col items-center py-4 border-r border-slate-800">
             {/* Top Section */}
             <div className="flex flex-col items-center gap-6">
                 {/* Logo */}
-                <Link to="/" className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center hover:bg-green-600 transition-colors">
+                <Link to="/" onClick={() => setActiveSidebarItem("messages")} className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center hover:bg-green-600 transition-colors">
                     <MessageSquare className="w-6 h-6 text-white" />
                 </Link>
 
                 {/* Chats Icon */}
                 <Link
                     to="/"
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${isActive("/") ? "bg-slate-800 text-green-500" : "text-slate-400 hover:bg-slate-800 hover:text-slate-300"
+                    onClick={() => setActiveSidebarItem("messages")}
+                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${activeSidebarItem === "messages" && location.pathname === "/"
+                        ? "bg-slate-800 text-green-500"
+                        : "text-slate-400 hover:bg-slate-800 hover:text-slate-300"
                         }`}
                     title="Chats"
                 >
@@ -28,17 +34,24 @@ const IconBar = () => {
                 </Link>
 
                 {/* Contacts Icon */}
-                <button
-                    className="w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-300 transition-colors"
+                <Link
+                    to="/"
+                    onClick={() => setActiveSidebarItem("contacts")}
+                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${activeSidebarItem === "contacts" && location.pathname === "/"
+                        ? "bg-slate-800 text-green-500"
+                        : "text-slate-400 hover:bg-slate-800 hover:text-slate-300"}`}
                     title="Contacts"
                 >
                     <Users className="w-5 h-5" />
-                </button>
+                </Link>
 
                 {/* Settings Icon */}
                 <Link
                     to="/settings"
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${isActive("/settings") ? "bg-slate-800 text-green-500" : "text-slate-400 hover:bg-slate-800 hover:text-slate-300"
+                    onClick={() => setActiveSidebarItem("settings")}
+                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${location.pathname === "/settings"
+                        ? "bg-slate-800 text-green-500"
+                        : "text-slate-400 hover:bg-slate-800 hover:text-slate-300"
                         }`}
                     title="Settings"
                 >
@@ -52,7 +65,10 @@ const IconBar = () => {
                 {authUser && (
                     <Link
                         to="/profile"
-                        className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-colors ${isActive("/profile") ? "border-green-500" : "border-transparent hover:border-slate-600"
+                        onClick={() => setActiveSidebarItem("settings")} // Optional: group profile under settings or separate? Let's leave it as is but highlighting might need adjustment.
+                        // Actually, let's make profile its own "settings" or just distinct.
+                        // User prompt didn't specify profile icon behavior, but typical is it goes to profile.
+                        className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-colors ${location.pathname === "/profile" ? "border-green-500" : "border-transparent hover:border-slate-600"
                             }`}
                         title="Profile"
                     >

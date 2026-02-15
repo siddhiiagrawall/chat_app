@@ -19,6 +19,54 @@ export const getUsersForSidebar = async (req, res) => {
   }
 };
 
+export const getConversations = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Find all messages where user is sender or receiver
+    const messages = await Message.find({
+      $or: [{ senderId: userId }, { receiverId: userId }],
+    }).sort({ createdAt: -1 });
+
+    const userIds = new Set();
+    messages.forEach((msg) => {
+      const otherUser =
+        msg.senderId.toString() === userId.toString()
+          ? msg.receiverId
+          : msg.senderId;
+      userIds.add(otherUser.toString());
+    });
+
+    const users = await User.find({ _id: { $in: Array.from(userIds) } }).select(
+      "-password"
+    );
+
+    const conversations = users.map((user) => {
+      const lastMessage = messages.find(
+        (msg) =>
+          (msg.senderId.toString() === userId.toString() &&
+            msg.receiverId.toString() === user._id.toString()) ||
+          (msg.senderId.toString() === user._id.toString() &&
+            msg.receiverId.toString() === userId.toString())
+      );
+
+      return {
+        ...user.toObject(),
+        lastMessage: lastMessage ? lastMessage.text : "",
+        lastMessageTime: lastMessage ? lastMessage.createdAt : null,
+      };
+    });
+
+    // Sort by last message time
+    conversations.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+
+    res.status(200).json(conversations);
+  } catch (error) {
+    console.error("Error in getConversations: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 export const getMessages = async (req, res) => {
   try {
     const { id: userToChatId } = req.params;
@@ -43,6 +91,12 @@ export const sendMessage = async (req, res) => {
     const { text, image } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
+
+    // Check if user is blocked
+    const receiver = await User.findById(receiverId);
+    if (receiver.blockedUsers.includes(senderId)) {
+      return res.status(403).json({ error: "You cannot send messages to this user" });
+    }
 
     let imageUrl;
     if (image) {

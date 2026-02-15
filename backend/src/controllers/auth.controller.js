@@ -142,3 +142,65 @@ export const getOtherUsers = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+export const updateAbout = async (req, res) => {
+  try {
+    const { about } = req.body;
+    const userId = req.user._id;
+
+    if (!about) {
+      return res.status(400).json({ message: "About content is required" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { about },
+      { new: true }
+    );
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.log("error in update about:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const blockUser = async (req, res) => {
+  try {
+    const { id: userToBlockId } = req.params;
+    const userId = req.user._id;
+
+    if (userId.toString() === userToBlockId) {
+      return res.status(400).json({ message: "You cannot block yourself" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user.blockedUsers.includes(userToBlockId)) {
+      user.blockedUsers.push(userToBlockId);
+      await user.save();
+    }
+
+    res.status(200).json({ message: "User blocked successfully" });
+  } catch (error) {
+    console.log("Error in blockUser controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const unblockUser = async (req, res) => {
+  try {
+    const { id: userToUnblockId } = req.params;
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+    user.blockedUsers = user.blockedUsers.filter(
+      (id) => id.toString() !== userToUnblockId
+    );
+    await user.save();
+
+    res.status(200).json({ message: "User unblocked successfully" });
+  } catch (error) {
+    console.log("Error in unblockUser controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};

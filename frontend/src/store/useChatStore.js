@@ -6,10 +6,18 @@ import { useAuthStore } from "./useAuthStore.js";
 export const useChatStore = create((set, get) => ({
   messages: [],
   users: [],
+  conversations: [], // Recent conversations
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
+  isMessagesLoading: false,
   isTyping: false,
+  isProfileOpen: false,
+  activeSidebarItem: "messages", // "messages" | "contacts" | "settings"
+
+  setActiveSidebarItem: (item) => set({ activeSidebarItem: item }),
+  toggleProfile: () => set((state) => ({ isProfileOpen: !state.isProfileOpen })),
+  closeProfile: () => set({ isProfileOpen: false }),
 
   getUsers: async () => {
     set({ isUsersLoading: true });
@@ -18,11 +26,20 @@ export const useChatStore = create((set, get) => ({
       set({ users: res.data });
     } catch (error) {
       console.error("getUsers error:", error);
-      if (error.response) {
-        toast.error(error.response.data.message || `Status: ${error.response.status}`);
-      } else {
-        toast.error(error.message);
-      }
+      toast.error(error.response?.data?.message || error.message);
+    } finally {
+      set({ isUsersLoading: false });
+    }
+  },
+
+  getConversations: async () => {
+    set({ isUsersLoading: true });
+    try {
+      const res = await axiosInstance.get("/messages/conversations");
+      set({ conversations: res.data });
+    } catch (error) {
+      console.error("getConversations error:", error);
+      toast.error(error.response?.data?.message || error.message);
     } finally {
       set({ isUsersLoading: false });
     }

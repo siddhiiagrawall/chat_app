@@ -25,6 +25,16 @@ const userSchema = new mongoose.Schema(
       enum: ["male", "female"],
       required: true,
     },
+    about: {
+      type: String,
+      default: "Hey there! I am using Chatty",
+    },
+    blockedUsers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     lastSeen: {
       type: Date,
       default: Date.now,

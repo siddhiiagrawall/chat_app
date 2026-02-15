@@ -1,10 +1,10 @@
-import { useRef, useState, useEffect } from "react";
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
+import { useState, useRef, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
-import { Image, Send, X, Smile } from "lucide-react";
+import { X, Smile, Image, Send } from "lucide-react";
 import toast from "react-hot-toast";
-
-const COMMON_EMOJIS = ["😊", "😂", "❤️", "👍", "🎉", "🔥", "😍", "🤔", "👏", "✨"];
 
 const MessageInput = () => {
   const [text, setText] = useState("");
@@ -12,8 +12,22 @@ const MessageInput = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const pickerRef = useRef(null);
   const { sendMessage, selectedUser } = useChatStore();
   const { socket } = useAuthStore();
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -53,9 +67,8 @@ const MessageInput = () => {
     }
   };
 
-  const handleEmojiClick = (emoji) => {
-    setText((prev) => prev + emoji);
-    setShowEmojiPicker(false);
+  const handleEmojiSelect = (emoji) => {
+    setText((prev) => prev + emoji.native);
   };
 
   const handleSendMessage = async (e) => {
@@ -114,7 +127,7 @@ const MessageInput = () => {
       )}
 
       <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-2 bg-slate-700 rounded-full px-4 py-2 border border-slate-600 focus-within:border-green-500 transition-colors">
+        <div className="flex-1 flex items-center gap-2 bg-slate-700 rounded-full px-4 py-2 border border-slate-600 focus-within:border-green-500 transition-colors relative">
           <input
             type="text"
             className="flex-1 bg-transparent border-none outline-none text-slate-50 placeholder-slate-400 text-sm"
@@ -131,28 +144,23 @@ const MessageInput = () => {
           />
 
           {/* Emoji Picker Button */}
-          <div className="relative">
+          <div className="relative" ref={pickerRef}>
             <button
               type="button"
-              className="p-1.5 hover:bg-slate-600 rounded-full transition-colors text-slate-400 hover:text-slate-300"
+              className={`p-1.5 hover:bg-slate-600 rounded-full transition-colors ${showEmojiPicker ? "text-green-500" : "text-slate-400 hover:text-slate-300"}`}
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
             >
               <Smile size={20} />
             </button>
 
-            {/* Simple Emoji Picker */}
+            {/* Emoji Mart Picker */}
             {showEmojiPicker && (
-              <div className="absolute bottom-12 right-0 bg-slate-800 rounded-lg shadow-lg p-2 grid grid-cols-5 gap-2 z-10 border border-slate-700">
-                {COMMON_EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    className="text-2xl hover:bg-slate-700 rounded p-1 transition-colors"
-                    onClick={() => handleEmojiClick(emoji)}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+              <div className="absolute bottom-12 right-0 z-50">
+                <Picker
+                  data={data}
+                  onEmojiSelect={handleEmojiSelect}
+                  theme="dark"
+                />
               </div>
             )}
           </div>

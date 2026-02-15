@@ -5,10 +5,11 @@ import { useChatStore } from "../store/useChatStore";
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser } = useChatStore();
   const { onlineUsers } = useAuthStore();
+  const { toggleProfile } = useChatStore();
 
   return (
     <div className="h-16 bg-slate-800 border-b border-slate-700 px-6 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 cursor-pointer" onClick={toggleProfile}>
         {/* Avatar */}
         <div className="avatar">
           <div className="size-10 rounded-full relative">
